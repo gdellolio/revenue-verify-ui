@@ -13,7 +13,7 @@ import {
 import { useDashboardAuth } from "../../auth";
 import { ProcessorLogo } from "../../components/ProcessorLogo";
 import { formatCount, formatDate, formatDateTime, formatMinorUnits, formatPeriod } from "../../format";
-import { MOCK_CONNECTIONS, MOCK_INVOICES, MOCK_STATEMENTS, MOCK_TRANSACTIONS } from "../../mockData";
+import { MOCK_CONNECTIONS, MOCK_INVOICES } from "../../mockData";
 import type { Merchant, MerchantInvitation, Statement, Transaction } from "../../types";
 import { InvitationStatusBadge, StatusBadge } from "./MerchantsPage";
 
@@ -146,23 +146,20 @@ export default function MerchantDetailPage() {
     merchant?.display_name || invitation?.merchant_name_hint || invitation?.merchant_email || "Merchant";
   const email = merchant?.primary_email ?? invitation?.merchant_email ?? null;
 
-  // Fall back to sample data anywhere the real thing doesn't exist yet.
+  // Processors fall back to sample data pre-connection; transactions and
+  // statements are always real — an empty state shows when there's nothing yet.
   const usingMockConnections = !merchant || merchant.connections.length === 0;
   const connections = usingMockConnections ? MOCK_CONNECTIONS : merchant.connections;
-  const usingMockTransactions = transactions.length === 0;
-  const allTransactions = usingMockTransactions ? MOCK_TRANSACTIONS : transactions;
-  const usingMockStatements = statements.length === 0;
-  const allStatements = usingMockStatements ? MOCK_STATEMENTS : statements;
 
   const shownTransactions = selectedProvider
-    ? allTransactions.filter((transaction) => transaction.provider_name === selectedProvider)
-    : allTransactions;
+    ? transactions.filter((transaction) => transaction.provider_name === selectedProvider)
+    : transactions;
   const shownInvoices = selectedProvider
     ? MOCK_INVOICES.filter((invoice) => invoice.provider_name === selectedProvider)
     : MOCK_INVOICES;
   const shownStatements = selectedProvider
-    ? allStatements.filter((statement) => statement.provider_name === selectedProvider)
-    : allStatements;
+    ? statements.filter((statement) => statement.provider_name === selectedProvider)
+    : statements;
 
   return (
     <div>
@@ -350,7 +347,6 @@ export default function MerchantDetailPage() {
 
           {activeTab === "transactions" && (
             <div className="mt-4">
-              {usingMockTransactions && <SampleNote />}
               <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
                 <table className="w-full whitespace-nowrap text-left text-sm">
                   <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
@@ -367,7 +363,9 @@ export default function MerchantDetailPage() {
                     {shownTransactions.map((transaction) => (
                       <tr key={transaction.id}>
                         <td className="px-4 py-2.5 text-slate-700">{formatDate(transaction.occurred_at)}</td>
-                        <td className="px-4 py-2.5 capitalize text-slate-700">{transaction.provider_name}</td>
+                        <td className="px-4 py-2.5">
+                          <ProcessorCell providerName={transaction.provider_name} />
+                        </td>
                         <td className="px-4 py-2.5 text-right font-medium text-slate-900">
                           {formatMinorUnits(transaction.gross_amount_in_minor_units, transaction.currency_code)}
                         </td>
@@ -377,14 +375,20 @@ export default function MerchantDetailPage() {
                         <td className="px-4 py-2.5 text-right text-slate-700">
                           {formatMinorUnits(transaction.net_amount_in_minor_units, transaction.currency_code)}
                         </td>
-                        <td className="px-4 py-2.5 text-slate-500">{transaction.status}</td>
+                        <td className="px-4 py-2.5">
+                          <TransactionStatusBadge status={transaction.status} />
+                        </td>
                       </tr>
                     ))}
-                    {shownTransactions.length === 0 && <EmptyRow columns={6} />}
+                    {shownTransactions.length === 0 && (
+                      <EmptyRow columns={6}>
+                        No transactions yet — they'll appear here after this merchant's next sync.
+                      </EmptyRow>
+                    )}
                   </tbody>
                 </table>
               </div>
-              {!usingMockTransactions && nextCursor && (
+              {nextCursor && (
                 <button
                   onClick={loadMoreTransactions}
                   disabled={loadingMore}
@@ -415,7 +419,9 @@ export default function MerchantDetailPage() {
                     {shownInvoices.map((invoice) => (
                       <tr key={invoice.id}>
                         <td className="px-4 py-3 font-medium text-slate-900">{invoice.number}</td>
-                        <td className="px-4 py-3 capitalize text-slate-700">{invoice.provider_name}</td>
+                        <td className="px-4 py-3">
+                          <ProcessorCell providerName={invoice.provider_name} />
+                        </td>
                         <td className="px-4 py-3 text-slate-500">{formatDate(invoice.issued_at)}</td>
                         <td className="px-4 py-3 text-slate-500">{formatDate(invoice.due_at)}</td>
                         <td className="px-4 py-3 text-right font-medium text-slate-900">
@@ -435,7 +441,6 @@ export default function MerchantDetailPage() {
 
           {activeTab === "statements" && (
             <div className="mt-4">
-              {usingMockStatements && <SampleNote />}
               <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
                 <table className="w-full whitespace-nowrap text-left text-sm">
                   <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
@@ -456,7 +461,9 @@ export default function MerchantDetailPage() {
                         <td className="px-4 py-3 font-medium text-slate-900">
                           {formatPeriod(statement.period_start_date)}
                         </td>
-                        <td className="px-4 py-3 capitalize text-slate-700">{statement.provider_name}</td>
+                        <td className="px-4 py-3">
+                          <ProcessorCell providerName={statement.provider_name} />
+                        </td>
                         <td className="px-4 py-3 text-right font-medium text-slate-900">
                           {formatMinorUnits(statement.gross_sales_amount_in_minor_units, statement.currency_code)}
                         </td>
@@ -477,7 +484,11 @@ export default function MerchantDetailPage() {
                         </td>
                       </tr>
                     ))}
-                    {shownStatements.length === 0 && <EmptyRow columns={8} />}
+                    {shownStatements.length === 0 && (
+                      <EmptyRow columns={8}>
+                        No statements yet — monthly totals appear once the processor has a full reporting period.
+                      </EmptyRow>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -489,6 +500,32 @@ export default function MerchantDetailPage() {
   );
 }
 
+function ProcessorCell({ providerName }: { providerName: string }) {
+  return (
+    <span className="flex items-center gap-2">
+      <ProcessorLogo providerName={providerName} size="sm" />
+      <span className="capitalize text-slate-700">{providerName}</span>
+    </span>
+  );
+}
+
+function TransactionStatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    succeeded: "bg-green-100 text-green-700",
+    available: "bg-green-100 text-green-700",
+    pending: "bg-amber-100 text-amber-700",
+    refunded: "bg-slate-200 text-slate-600",
+    failed: "bg-red-100 text-red-700",
+  };
+  return (
+    <span
+      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${styles[status] ?? "bg-slate-100 text-slate-600"}`}
+    >
+      {status}
+    </span>
+  );
+}
+
 function SampleNote() {
   return (
     <p className="mb-3 text-xs text-amber-600">
@@ -497,11 +534,11 @@ function SampleNote() {
   );
 }
 
-function EmptyRow({ columns }: { columns: number }) {
+function EmptyRow({ columns, children }: { columns: number; children?: React.ReactNode }) {
   return (
     <tr>
       <td colSpan={columns} className="px-4 py-8 text-center text-sm text-slate-400">
-        Nothing here for this processor.
+        {children ?? "Nothing here for this processor."}
       </td>
     </tr>
   );
