@@ -58,6 +58,23 @@ export interface Statement {
   payout_count: number | null;
 }
 
+export interface ActivityEvent {
+  id: number;
+  action: string;
+  actor_type: string;
+  occurred_at: string;
+  metadata: Record<string, unknown> | null;
+}
+
+export interface SyncRun {
+  id: number;
+  status: "queued" | "running" | "succeeded" | "failed";
+  triggered_by: string;
+  started_at: string | null;
+  finished_at: string | null;
+  record_counts: Record<string, number> | null;
+}
+
 export interface MerchantInvitation {
   invitation_id: string;
   merchant_email: string;

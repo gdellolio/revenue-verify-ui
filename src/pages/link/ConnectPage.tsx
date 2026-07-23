@@ -77,12 +77,12 @@ export default function ConnectPage() {
           <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
             <p className="font-medium text-slate-900">What will be shared</p>
             <ul className="mt-2 space-y-1.5 text-slate-600">
-              <li>✓ Read-only payment history — transactions and monthly statements</li>
+              <li>✓ Read-only payment history: transactions and monthly statements</li>
               <li>✓ Used only to verify your revenue for financing</li>
             </ul>
             <p className="mt-3 font-medium text-slate-900">What will never happen</p>
             <ul className="mt-2 space-y-1.5 text-slate-600">
-              <li>✗ We never see your password — you sign in on Stripe's own site</li>
+              <li>✗ We never see your password, you sign in on Stripe's own site</li>
               <li>✗ No one can move money or make changes to your account</li>
             </ul>
           </div>

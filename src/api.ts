@@ -1,8 +1,10 @@
 import type {
+  ActivityEvent,
   LinkDetails,
   Merchant,
   MerchantInvitation,
   Statement,
+  SyncRun,
   TransactionPage,
 } from "./types";
 
@@ -82,6 +84,18 @@ export function listTransactions(
   return request(`/v1/merchants/${merchantId}/transactions${query}`, { apiKey });
 }
 
+export function listSyncRuns(apiKey: string, merchantId: string): Promise<{ syncs: SyncRun[] }> {
+  return request(`/v1/merchants/${merchantId}/syncs`, { apiKey });
+}
+
+export function getMerchantActivity(apiKey: string, merchantId: string): Promise<{ events: ActivityEvent[] }> {
+  return request(`/v1/merchants/${merchantId}/activity`, { apiKey });
+}
+
+export function getInvitationActivity(apiKey: string, invitationId: string): Promise<{ events: ActivityEvent[] }> {
+  return request(`/v1/merchant-invitations/${invitationId}/activity`, { apiKey });
+}
+
 export function refreshMerchant(
   apiKey: string,
   merchantId: string,
@@ -118,6 +132,10 @@ export function resendMerchantInvitation(apiKey: string, invitationId: string): 
 
 export function revokeMerchantInvitation(apiKey: string, invitationId: string): Promise<MerchantInvitation> {
   return request(`/v1/merchant-invitations/${invitationId}/revoke`, { method: "POST", apiKey });
+}
+
+export function deleteMerchantInvitation(apiKey: string, invitationId: string): Promise<void> {
+  return request(`/v1/merchant-invitations/${invitationId}`, { method: "DELETE", apiKey });
 }
 
 export function revokeMerchantAccess(apiKey: string, merchantId: string): Promise<void> {
