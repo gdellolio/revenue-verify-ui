@@ -17,6 +17,7 @@ export interface Merchant {
   id: string;
   display_name: string;
   legal_name: string | null;
+  primary_email: string | null;
   created_at: string;
   connections: ProcessorConnectionSummary[];
 }
@@ -59,8 +60,13 @@ export interface Statement {
 
 export interface MerchantInvitation {
   invitation_id: string;
+  merchant_email: string;
+  merchant_name_hint: string | null;
   merchant_link_url: string | null;
-  status: "pending" | "opened" | "connected" | "expired";
+  status: "pending" | "opened" | "connected" | "expired" | "revoked";
   merchant_id: string | null;
+  merchant_display_name: string | null;
+  connections: ProcessorConnectionSummary[];
+  created_at: string;
   expires_at: string;
 }

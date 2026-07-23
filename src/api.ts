@@ -45,6 +45,7 @@ async function request<ResponseBody>(
     }
     throw new ApiError(response.status, code, message);
   }
+  if (response.status === 204) return undefined as ResponseBody;
   return response.json() as Promise<ResponseBody>;
 }
 
@@ -101,4 +102,24 @@ export function createMerchantInvitation(
       merchant_name_hint: merchantNameHint || null,
     },
   });
+}
+
+export function listMerchantInvitations(apiKey: string): Promise<{ invitations: MerchantInvitation[] }> {
+  return request("/v1/merchant-invitations", { apiKey });
+}
+
+export function getMerchantInvitation(apiKey: string, invitationId: string): Promise<MerchantInvitation> {
+  return request(`/v1/merchant-invitations/${invitationId}`, { apiKey });
+}
+
+export function resendMerchantInvitation(apiKey: string, invitationId: string): Promise<MerchantInvitation> {
+  return request(`/v1/merchant-invitations/${invitationId}/resend`, { method: "POST", apiKey });
+}
+
+export function revokeMerchantInvitation(apiKey: string, invitationId: string): Promise<MerchantInvitation> {
+  return request(`/v1/merchant-invitations/${invitationId}/revoke`, { method: "POST", apiKey });
+}
+
+export function revokeMerchantAccess(apiKey: string, merchantId: string): Promise<void> {
+  return request(`/v1/merchants/${merchantId}/revoke-access`, { method: "POST", apiKey });
 }
