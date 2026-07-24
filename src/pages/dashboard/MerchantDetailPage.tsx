@@ -843,7 +843,7 @@ function StatusTimeline({
       state: isConnected ? "done" : invitationDead ? "upcoming" : linkOpened ? "current" : "upcoming",
     },
     {
-      label: "Data synced",
+      label: connection?.last_synced_at ? "Data synced" : "Data syncing",
       sublabel: connection?.last_synced_at
         ? formatDateTime(connection.last_synced_at)
         : isConnected
