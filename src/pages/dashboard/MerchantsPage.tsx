@@ -4,7 +4,6 @@ import { listMerchantInvitations } from "../../api";
 import { useDashboardAuth } from "../../auth";
 import { ProcessorLogo } from "../../components/ProcessorLogo";
 import { formatDateTime } from "../../format";
-import { MOCK_CONNECTIONS } from "../../mockData";
 import type { MerchantInvitation } from "../../types";
 
 type StatusFilter = "all" | "sent" | "connected" | "expired" | "revoked";
@@ -196,8 +195,7 @@ function MerchantTable({ invitations }: { invitations: MerchantInvitation[] }) {
         </thead>
         <tbody className="divide-y divide-slate-100">
           {invitations.map((invitation) => {
-            // Same sample-data fallback the detail page uses, so both screens agree.
-            const connections = invitation.connections.length > 0 ? invitation.connections : MOCK_CONNECTIONS;
+            const connections = invitation.connections;
             const connection = connections[0];
             const isConnected = invitation.status === "connected" && invitation.merchant_id;
             // Merchant id once connected; falls back to the invitation id, which the
@@ -226,16 +224,20 @@ function MerchantTable({ invitations }: { invitations: MerchantInvitation[] }) {
                   <InvitationStatusBadge status={invitation.status} />
                 </td>
                 <td className="px-4 py-3">
-                  <span className="flex items-center">
-                    {connections.map((processorConnection, index) => (
-                      <ProcessorLogo
-                        key={processorConnection.provider_name}
-                        providerName={processorConnection.provider_name}
-                        size="sm"
-                        className={index > 0 ? "-ml-1.5 ring-2 ring-white" : "ring-2 ring-white"}
-                      />
-                    ))}
-                  </span>
+                  {connections.length > 0 ? (
+                    <span className="flex items-center">
+                      {connections.map((processorConnection, index) => (
+                        <ProcessorLogo
+                          key={processorConnection.provider_name}
+                          providerName={processorConnection.provider_name}
+                          size="sm"
+                          className={index > 0 ? "-ml-1.5 ring-2 ring-white" : "ring-2 ring-white"}
+                        />
+                      ))}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-400">Not connected</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-slate-500">{formatDateTime(connection?.last_synced_at ?? null)}</td>
                 <td className="px-4 py-3 text-slate-500">{formatDateTime(invitation.created_at)}</td>

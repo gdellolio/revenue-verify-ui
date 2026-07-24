@@ -19,14 +19,15 @@ import { useDashboardAuth } from "../../auth";
 import { ConfirmModal } from "../../components/ConfirmModal";
 import { ProcessorLogo } from "../../components/ProcessorLogo";
 import { formatCount, formatDate, formatDateTime, formatMinorUnits, formatPeriod } from "../../format";
-import { MOCK_CONNECTIONS, MOCK_INVOICES } from "../../mockData";
+import { MOCK_INVOICES } from "../../mockData";
 import type { ActivityEvent, Merchant, MerchantInvitation, Statement, SyncRun, Transaction } from "../../types";
 import { InvitationStatusBadge, StatusBadge } from "./MerchantsPage";
 
 type DataTab = "transactions" | "invoices" | "statements" | "activity";
 
-// Processors we don't support yet — shown greyed out in the rail.
-const UPCOMING_PROCESSORS = ["square", "shopify", "adyen"];
+// Processors the platform supports (or will) — any not actually connected
+// by this merchant render greyed out in the rail.
+const SUPPORTED_PROCESSORS = ["stripe", "square", "paypal", "shopify"];
 
 export default function MerchantDetailPage() {
   const { merchantId } = useParams<{ merchantId: string }>();
@@ -196,10 +197,9 @@ export default function MerchantDetailPage() {
     merchant?.display_name || invitation?.merchant_name_hint || invitation?.merchant_email || "Merchant";
   const email = merchant?.primary_email ?? invitation?.merchant_email ?? null;
 
-  // Processors fall back to sample data pre-connection; transactions and
-  // statements are always real — an empty state shows when there's nothing yet.
-  const usingMockConnections = !merchant || merchant.connections.length === 0;
-  const connections = usingMockConnections ? MOCK_CONNECTIONS : merchant.connections;
+  // Only real connections are ever shown; processors the merchant hasn't
+  // connected appear greyed out in the rail.
+  const connections = merchant?.connections ?? [];
 
   const shownTransactions = selectedProvider
     ? transactions.filter((transaction) => transaction.provider_name === selectedProvider)
@@ -409,7 +409,9 @@ export default function MerchantDetailPage() {
               </button>
             ))}
 
-            {UPCOMING_PROCESSORS.map((providerName) => (
+            {SUPPORTED_PROCESSORS.filter(
+              (providerName) => !connections.some((connection) => connection.provider_name === providerName),
+            ).map((providerName) => (
               <div
                 key={providerName}
                 className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm opacity-40"
