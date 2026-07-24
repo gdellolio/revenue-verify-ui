@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
+  createMerchantInvitation,
   deleteMerchantInvitation,
   getInvitationActivity,
   getMerchant,
@@ -49,6 +50,9 @@ export default function MerchantDetailPage() {
   const [busy, setBusy] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [reconnectLink, setReconnectLink] = useState<string | null>(null);
+  const [reconnectEmail, setReconnectEmail] = useState("");
+  const [reconnectCopied, setReconnectCopied] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"revoke-invitation" | "delete-merchant" | null>(null);
 
   // null = unified view across all processors (the default).
@@ -122,6 +126,32 @@ export default function MerchantDetailPage() {
     await navigator.clipboard.writeText(inviteLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // A dead connection (revoked/error) is fixed by sending the merchant a fresh
+  // connection link — a plain invitation. Reconnecting the same processor account
+  // reactivates it; a different account connects alongside.
+  const getReconnectLink = async () => {
+    if (!apiKey || !merchant) return;
+    const email = merchant.primary_email ?? reconnectEmail.trim();
+    if (!email) return;
+    setBusy(true);
+    setErrorMessage(null);
+    try {
+      const created = await createMerchantInvitation(apiKey, email, merchant.display_name);
+      setReconnectLink(created.merchant_link_url);
+    } catch {
+      setErrorMessage("Couldn't generate a reconnect link.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copyReconnectLink = async () => {
+    if (!reconnectLink) return;
+    await navigator.clipboard.writeText(reconnectLink);
+    setReconnectCopied(true);
+    setTimeout(() => setReconnectCopied(false), 2000);
   };
 
   const revokeInvitation = async () => {
@@ -277,6 +307,58 @@ export default function MerchantDetailPage() {
       {invitation?.status === "revoked" && (
         <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
           This invitation was revoked. Create a new invitation to reconnect this merchant.
+        </div>
+      )}
+
+      {/* Reconnect banner: a connected merchant whose processor connection died */}
+      {merchant && merchant.connections.some((connection) => connection.status !== "active") && (
+        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-amber-900">
+              {(() => {
+                const dead = merchant.connections.find((connection) => connection.status !== "active")!;
+                return (
+                  <>
+                    The <span className="capitalize">{dead.provider_name}</span> connection is no longer
+                    active — data stopped syncing {formatDateTime(dead.last_synced_at)}. Send the
+                    merchant a new link to reconnect.
+                  </>
+                );
+              })()}
+            </p>
+            {reconnectLink ? (
+              <div className="flex items-center gap-2">
+                <code className="max-w-[280px] truncate rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs text-slate-700">
+                  {reconnectLink}
+                </code>
+                <button
+                  onClick={copyReconnectLink}
+                  className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700"
+                >
+                  {reconnectCopied ? "Copied ✓" : "Copy"}
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                {!merchant.primary_email && (
+                  <input
+                    type="email"
+                    value={reconnectEmail}
+                    onChange={(event) => setReconnectEmail(event.target.value)}
+                    placeholder="merchant email"
+                    className="rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-sm focus:border-amber-500 focus:outline-none"
+                  />
+                )}
+                <button
+                  onClick={getReconnectLink}
+                  disabled={busy || (!merchant.primary_email && !reconnectEmail.trim())}
+                  className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-60"
+                >
+                  {busy ? "Generating…" : "Get reconnect link"}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

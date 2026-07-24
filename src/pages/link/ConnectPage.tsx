@@ -1,9 +1,10 @@
 // The merchant consent screen — the highest-trust moment in the product.
-// States: loading → consent | already connected | invalid | expired.
+// States: loading → consent (processor picker) | already connected | invalid | expired.
 
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ApiError, getLinkDetails, startStripeAuthorization } from "../../api";
+import { ProcessorLogo } from "../../components/ProcessorLogo";
 import type { LinkDetails } from "../../types";
 
 type PageState =
@@ -11,6 +12,14 @@ type PageState =
   | { kind: "ready"; details: LinkDetails }
   | { kind: "invalid" }
   | { kind: "expired" };
+
+// Stripe is live; the rest are shown so merchants see where their processor fits.
+const PROCESSORS: { name: string; label: string; available: boolean }[] = [
+  { name: "stripe", label: "Stripe", available: true },
+  { name: "square", label: "Square", available: false },
+  { name: "paypal", label: "PayPal", available: false },
+  { name: "shopify", label: "Shopify Payments", available: false },
+];
 
 export default function ConnectPage() {
   const { token } = useParams<{ token: string }>();
@@ -67,37 +76,63 @@ export default function ConnectPage() {
 
       {state.kind === "ready" && state.details.status !== "connected" && (
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">
+          <h1 className="text-xl font-semibold text-slate-900">
             {state.details.lender_name} is requesting your revenue data
           </h1>
           {state.details.merchant_name_hint && (
-            <p className="mt-1 text-slate-500">for {state.details.merchant_name_hint}</p>
+            <p className="mt-1 text-sm text-slate-500">for {state.details.merchant_name_hint}</p>
           )}
 
-          <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
-            <p className="font-medium text-slate-900">What will be shared</p>
-            <ul className="mt-2 space-y-1.5 text-slate-600">
-              <li>✓ Read-only payment history: transactions and monthly statements</li>
-              <li>✓ Used only to verify your revenue for financing</li>
-            </ul>
-            <p className="mt-3 font-medium text-slate-900">What will never happen</p>
-            <ul className="mt-2 space-y-1.5 text-slate-600">
-              <li>✗ We never see your password, you sign in on Stripe's own site</li>
-              <li>✗ No one can move money or make changes to your account</li>
-            </ul>
+          <p className="mt-5 text-sm font-medium text-slate-900">Choose your payment processor</p>
+          <div className="mt-2 space-y-2">
+            {PROCESSORS.map((processor) =>
+              processor.available ? (
+                <button
+                  key={processor.name}
+                  onClick={connectStripe}
+                  disabled={redirecting}
+                  className="group flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-indigo-400 hover:bg-indigo-50/50 disabled:opacity-60"
+                >
+                  <ProcessorLogo providerName={processor.name} />
+                  <span className="flex-1">
+                    <span className="block text-sm font-medium text-slate-900">{processor.label}</span>
+                    <span className="block text-xs text-slate-400">
+                      {redirecting ? "Redirecting…" : "Sign in securely on their site"}
+                    </span>
+                  </span>
+                  <span className="text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-indigo-500">
+                    →
+                  </span>
+                </button>
+              ) : (
+                <div
+                  key={processor.name}
+                  className="flex w-full items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 opacity-60"
+                >
+                  <ProcessorLogo providerName={processor.name} />
+                  <span className="flex-1">
+                    <span className="block text-sm font-medium text-slate-500">{processor.label}</span>
+                  </span>
+                  <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                    Coming soon
+                  </span>
+                </div>
+              ),
+            )}
           </div>
-
-          <button
-            onClick={connectStripe}
-            disabled={redirecting}
-            className="mt-6 w-full rounded-lg bg-indigo-600 px-4 py-3 font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
-          >
-            {redirecting ? "Redirecting to Stripe…" : "Connect with Stripe"}
-          </button>
           {errorMessage && <p className="mt-3 text-sm text-red-600">{errorMessage}</p>}
-          <p className="mt-4 text-center text-xs text-slate-400">
-            You can revoke access at any time from your Stripe dashboard.
-          </p>
+
+          <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600">
+            <p>
+              <span className="font-medium text-slate-900">Read-only access.</span> Only your payment
+              history — transactions and monthly statements — is shared, solely to verify your revenue.
+            </p>
+            <p className="mt-2">
+              <span className="font-medium text-slate-900">Your login stays yours.</span> You sign in on
+              your processor's own site — we never see your password, and no one can move money or
+              change your account. You can revoke access there at any time.
+            </p>
+          </div>
         </div>
       )}
     </Shell>
