@@ -47,9 +47,10 @@ export default function InviteMerchantPage() {
           />
         </label>
         <label className="mt-4 block text-sm font-medium text-slate-700">
-          Business name <span className="font-normal text-slate-400">(optional)</span>
+          Business name
           <input
             type="text"
+            required
             value={merchantName}
             onChange={(event) => setMerchantName(event.target.value)}
             placeholder="Joe's Pizza"
