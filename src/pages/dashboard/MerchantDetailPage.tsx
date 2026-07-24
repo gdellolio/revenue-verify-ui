@@ -847,7 +847,7 @@ function StatusTimeline({
       sublabel: connection?.last_synced_at
         ? formatDateTime(connection.last_synced_at)
         : isConnected
-          ? "First sync runs automatically"
+          ? "Data will begin syncing shortly"
           : null,
       state: connection?.last_synced_at ? "done" : isConnected ? "current" : "upcoming",
     },
