@@ -81,6 +81,12 @@ export default function MerchantDetailPage() {
       .catch(() =>
         Promise.all([getMerchantInvitation(apiKey, merchantId), getInvitationActivity(apiKey, merchantId)])
           .then(([invitationResponse, activityResponse]) => {
+            // The route id was an invitation id but the merchant has since connected —
+            // switch to the real merchant view instead of the pre-connection one.
+            if (invitationResponse.merchant_id) {
+              navigate(`/dashboard/merchants/${invitationResponse.merchant_id}`, { replace: true });
+              return;
+            }
             setInvitation(invitationResponse);
             setActivityEvents(activityResponse.events);
           })
