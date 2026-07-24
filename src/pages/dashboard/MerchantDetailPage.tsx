@@ -51,6 +51,8 @@ export default function MerchantDetailPage() {
   const [busy, setBusy] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copyingMerchantLink, setCopyingMerchantLink] = useState(false);
+  const [merchantLinkCopied, setMerchantLinkCopied] = useState(false);
   const [reconnectLink, setReconnectLink] = useState<string | null>(null);
   const [reconnectEmail, setReconnectEmail] = useState("");
   const [reconnectCopied, setReconnectCopied] = useState(false);
@@ -111,6 +113,26 @@ export default function MerchantDetailPage() {
     if (!apiKey || !merchantId || !merchant) return;
     const { ingestion_run_id } = await refreshMerchant(apiKey, merchantId);
     setRefreshNote(`Sync #${ingestion_run_id} queued. Fresh data will appear shortly.`);
+  };
+
+  // Same link the merchant already has: reusing it (via resend) lets them add
+  // another processor or reconnect a dead one, so this just gets a fresh copy.
+  const copyMerchantInvitationLink = async () => {
+    if (!apiKey || !merchant?.invitation_id) return;
+    setCopyingMerchantLink(true);
+    setErrorMessage(null);
+    try {
+      const updated = await resendMerchantInvitation(apiKey, merchant.invitation_id);
+      if (updated.merchant_link_url) {
+        await navigator.clipboard.writeText(updated.merchant_link_url);
+        setMerchantLinkCopied(true);
+        setTimeout(() => setMerchantLinkCopied(false), 2000);
+      }
+    } catch {
+      setErrorMessage("Couldn't copy the invitation link.");
+    } finally {
+      setCopyingMerchantLink(false);
+    }
   };
 
   const getInviteLink = async () => {
@@ -249,6 +271,23 @@ export default function MerchantDetailPage() {
                 className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 Refresh data
+              </button>
+            )}
+            {merchant?.invitation_id && (
+              <button
+                onClick={copyMerchantInvitationLink}
+                disabled={copyingMerchantLink}
+                title="Copy this merchant's connect link — reuse it to add another processor or reconnect"
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-400 hover:bg-slate-50 hover:text-slate-600 disabled:opacity-60"
+              >
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"
+                  />
+                </svg>
+                {copyingMerchantLink ? "Copying…" : merchantLinkCopied ? "Copied ✓" : "Copy invitation link"}
               </button>
             )}
             {invitation && invitation.status !== "connected" && invitation.status !== "revoked" && (

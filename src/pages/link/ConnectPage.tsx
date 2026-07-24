@@ -1,5 +1,7 @@
 // The merchant consent screen — the highest-trust moment in the product.
-// States: loading → consent (processor picker) | already connected | invalid | expired.
+// States: loading → consent / add-another (processor picker) | invalid | expired.
+// The same link is reused to connect a second processor, or reconnect a dead one —
+// so "connected" isn't a dead end, it just changes the picker's framing.
 
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
@@ -67,26 +69,46 @@ export default function ConnectPage() {
         </Notice>
       )}
 
-      {state.kind === "ready" && state.details.status === "connected" && (
-        <Notice title="Already connected ✓">
-          Your revenue data is already being securely shared with {state.details.lender_name}. There's
-          nothing more to do.
-        </Notice>
-      )}
-
-      {state.kind === "ready" && state.details.status !== "connected" && (
+      {state.kind === "ready" && (
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">
-            {state.details.lender_name} is requesting your revenue data
-          </h1>
-          {state.details.merchant_name_hint && (
-            <p className="mt-1 text-sm text-slate-500">for {state.details.merchant_name_hint}</p>
+          {state.details.status === "connected" ? (
+            <>
+              <h1 className="text-xl font-semibold text-slate-900">Connect another payment processor</h1>
+              <p className="mt-1 text-sm text-slate-500">
+                Your revenue data is already being shared with {state.details.lender_name}. Add another
+                processor below, or close this window if that's all you need.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-xl font-semibold text-slate-900">
+                {state.details.lender_name} is requesting your revenue data
+              </h1>
+              {state.details.merchant_name_hint && (
+                <p className="mt-1 text-sm text-slate-500">for {state.details.merchant_name_hint}</p>
+              )}
+            </>
           )}
 
           <p className="mt-5 text-sm font-medium text-slate-900">Choose your payment processor</p>
           <div className="mt-2 space-y-2">
-            {PROCESSORS.map((processor) =>
-              processor.available ? (
+            {PROCESSORS.map((processor) => {
+              const alreadyConnected = state.details.connected_processors.includes(processor.name);
+              if (alreadyConnected) {
+                return (
+                  <div
+                    key={processor.name}
+                    className="flex w-full items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3"
+                  >
+                    <ProcessorLogo providerName={processor.name} />
+                    <span className="flex-1 text-sm font-medium text-slate-900">{processor.label}</span>
+                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700">
+                      Connected ✓
+                    </span>
+                  </div>
+                );
+              }
+              return processor.available ? (
                 <button
                   key={processor.name}
                   onClick={connectStripe}
@@ -117,8 +139,8 @@ export default function ConnectPage() {
                     Coming soon
                   </span>
                 </div>
-              ),
-            )}
+              );
+            })}
           </div>
           {errorMessage && <p className="mt-3 text-sm text-red-600">{errorMessage}</p>}
 

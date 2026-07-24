@@ -269,7 +269,7 @@ export function InvitationStatusBadge({ status }: { status: MerchantInvitation["
   const labels: Record<MerchantInvitation["status"], string> = {
     pending: "Invite sent",
     opened: "Invite sent",
-    connected: "Invite accepted",
+    connected: "Connected",
     expired: "Expired",
     revoked: "Revoked",
   };

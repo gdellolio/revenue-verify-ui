@@ -4,6 +4,7 @@ export interface LinkDetails {
   lender_name: string;
   merchant_name_hint: string | null;
   status: "pending" | "opened" | "connected" | "expired";
+  connected_processors: string[];
 }
 
 export interface ProcessorConnectionSummary {
@@ -18,6 +19,7 @@ export interface Merchant {
   display_name: string;
   legal_name: string | null;
   primary_email: string | null;
+  invitation_id: string | null;
   created_at: string;
   connections: ProcessorConnectionSummary[];
 }

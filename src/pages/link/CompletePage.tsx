@@ -1,7 +1,7 @@
-// Where the Stripe OAuth callback lands the merchant: ?outcome=connected|failed|invalid
+// Where the Stripe OAuth callback lands the merchant: ?outcome=connected|failed|invalid&token=...
 
 import { useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 const OUTCOMES: Record<string, { title: string; message: string; tone: "success" | "error" }> = {
   connected: {
@@ -28,6 +28,7 @@ const CONFETTI_COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ec4899", "#0ea5e9", 
 export default function CompletePage() {
   const [searchParams] = useSearchParams();
   const outcome = OUTCOMES[searchParams.get("outcome") ?? ""] ?? OUTCOMES.invalid;
+  const token = searchParams.get("token");
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
@@ -46,6 +47,14 @@ export default function CompletePage() {
           )}
           <h1 className="mt-4 text-xl font-semibold text-slate-900">{outcome.title}</h1>
           <p className="mt-2 text-slate-600">{outcome.message}</p>
+          {outcome.tone === "success" && token && (
+            <Link
+              to={`/link/${token}`}
+              className="mt-5 inline-block text-sm font-medium text-indigo-600 hover:underline"
+            >
+              Connect another payment processor →
+            </Link>
+          )}
         </div>
       </div>
     </div>
