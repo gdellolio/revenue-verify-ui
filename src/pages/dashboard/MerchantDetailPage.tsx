@@ -365,7 +365,7 @@ export default function MerchantDetailPage() {
       {/* Processor rail + data pane */}
       <div className="mt-6 flex flex-col gap-6 md:flex-row">
         {/* Vertical processor tabs */}
-        <nav className="w-full shrink-0 md:w-60">
+        <nav className="w-full shrink-0 md:w-72">
           <div className="rounded-xl border border-slate-200 bg-white p-2">
             <button
               onClick={() => setSelectedProvider(null)}
